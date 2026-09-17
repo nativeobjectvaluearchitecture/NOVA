@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "native-object-value-architecture"
+version = "0.1.0"
+description = "NOVA: a lightweight, schema-driven communication SDK for multi-agent systems"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+authors = [{ name = "NOVA Contributors" }]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/YOUR_GITHUB_USERNAME/native-object-value-architecture"
+Repository = "https://github.com/YOUR_GITHUB_USERNAME/native-object-value-architecture"
+
+[tool.setuptools.packages.find]
+include = ["nova*"]
