@@ -30,12 +30,14 @@ class AsyncAgentServer:
         agent_id: str,
         codec: int = DEFAULT_CODEC,
         ssl_context: Optional[ssl_module.SSLContext] = None,
+        auth_token: Optional[str] = None,
     ):
         self.host = host
         self.port = port
         self.agent_id = agent_id
         self.codec = codec
         self.ssl_context = ssl_context
+        self.auth_token = auth_token
         self.methods: Dict[str, Callable[..., Any]] = {}
         self.events: Dict[str, Callable[..., Any]] = {}
         self._server: Optional[asyncio.base_events.Server] = None
@@ -109,9 +111,13 @@ class AsyncAgentServer:
                     f"not {self.agent_id}"
                 )
 
+            payload = dict(request.payload or {})
+            provided_token = payload.pop("_auth_token", None)
+            if self.auth_token is not None and provided_token != self.auth_token:
+                raise PermissionError("unauthorized: missing or invalid auth token")
+
             if request.type == MessageType.EVENT:
                 topic = request.method
-                payload = request.payload or {}
                 if topic in self.events:
                     result = self.events[topic](**payload)
                     if inspect.isawaitable(result):
@@ -121,7 +127,6 @@ class AsyncAgentServer:
                 if request.method not in self.methods:
                     raise ValueError(f"Unknown method: {request.method}")
                 fn = self.methods[request.method]
-                payload = request.payload or {}
                 result = fn(**payload)
                 if inspect.isawaitable(result):
                     result = await result

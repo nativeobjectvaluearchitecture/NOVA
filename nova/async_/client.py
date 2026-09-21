@@ -76,6 +76,7 @@ class AsyncAgentClient:
         retries: int = 0,
         retry_backoff: float = 0.2,
         pool_size: int = 32,
+        auth_token: Optional[str] = None,
     ):
         self.agent = agent
         self.host = host
@@ -86,6 +87,7 @@ class AsyncAgentClient:
         self.ssl_context = ssl_context
         self.retries = retries
         self.retry_backoff = retry_backoff
+        self.auth_token = auth_token
         self._pool = _ConnectionPool(max_size=pool_size)
 
     async def _connect(self):
@@ -106,6 +108,9 @@ class AsyncAgentClient:
 
         if task_id is not None:
             payload.setdefault("task_id", task_id)
+
+        if self.auth_token is not None:
+            payload["_auth_token"] = self.auth_token
 
         message = Message(
             version=1,
@@ -144,7 +149,12 @@ class AsyncAgentClient:
             request_id=request_id,
             parent_request_id=None,
             method="__state_update__",
-            payload={"key": key, "vector": vector, "priority": priority},
+            payload={
+                "key": key,
+                "vector": vector,
+                "priority": priority,
+                **({"_auth_token": self.auth_token} if self.auth_token is not None else {}),
+            },
         )
         return await self._send(message)
 
@@ -159,7 +169,11 @@ class AsyncAgentClient:
             request_id=request_id,
             parent_request_id=None,
             method="__heartbeat__",
-            payload={},
+            payload=(
+                {"_auth_token": self.auth_token}
+                if self.auth_token is not None
+                else {}
+            ),
         )
         return await self._send(message)
 
